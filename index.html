@@ -615,49 +615,40 @@
   <script>
     let excelData = [], timData = [], availableDates = [], petugasMaster = [];
     let chartBkuPML = null, chartRtPML = null, chartBkuPPL = null, chartRtPPL = null;
-    const COL = {
-      nama: ['Nama Petugas', 'nama petugas', 'Nama'],
-      waktu: ['Waktu Jalan', 'waktu jalan', 'Waktu'],
-      sls: ['Mau Ke SLS mana (kode 16 dikit)', 'Mau Ke SLS mana', 'SLS'],
-      bkuK: ['BKU yang dikunjungi', 'BKU dikunjungi'],
-      bkuD: ['BKU yang didata', 'BKU didata'],
-      bkuT: ['BKU yang menolak', 'BKU menolak'],
-      rtK: ['Rumah Tangga Yang dikunjungi', 'RT dikunjungi'],
-      rtD: ['Rumah Tangga Yang didata', 'RT didata'],
-      rtT: ['Rumah Tangga yang menolak', 'RT menolak'],
-      masalah: ['Lapor Permasalahan', 'Masalah'],
-      tglIzin: ['Tanggal Izin', 'tanggal izin'],
-      alasan: ['Alasan', 'alasan'],
-      pml: ['PML', 'pml']
-    };
+    const COL = { nama: 'Nama Petugas', waktu: 'Waktu Jalan', sls: 'Mau Ke SLS mana (kode 16 dikit)', bkuK: 'BKU yang dikunjungi', bkuD: 'BKU yang didata', bkuT: 'BKU yang menolak', rtK: 'Rumah Tangga Yang dikunjungi', rtD: 'Rumah Tangga Yang didata', rtT: 'Rumah Tangga yang menolak', masalah: 'Lapor Permasalahan', tglIzin: 'Tanggal Izin', alasan: 'Alasan', pml: 'PML' };
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuMnuC4fSeZCHe7x0cAVmlDumBU_YgIgc4N5yAbOSdST3_xpW23gits_-2Fu6lmxJo/exec?format=json&ts=' + Date.now();
 
-    function clean(v) { return (v === undefined || v === null) ? '' : String(v).trim() }
-    function num(v) { if (v === undefined || v === null || v === '') return 0; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n }
-    function esc(s) { return clean(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\'': '&#39;', '"': '&quot;' }[c])) }
-    function normalizeName(s) { return clean(s).replace(/\s+/g, ' ').toUpperCase() }
-    function pick(obj, keys) { for (const k of keys) { if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k] } return '' }
-    function toWitaDateKey(d) { const wita = new Date(d.getTime() + (8 * 60 * 60 * 1000)); return `${wita.getUTCFullYear()}-${String(wita.getUTCMonth() + 1).padStart(2, '0')}-${String(wita.getUTCDate()).padStart(2, '0')}` }
+    function clean(v) { return (v === undefined || v === null) ? '' : String(v).trim(); }
+    function num(v) { if (v === undefined || v === null || v === '') return 0; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n; }
+    function esc(s) { return clean(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\'': '&#39;', '"': '&quot;' }[c])); }
+    function normalizeName(s) { return clean(s).replace(/\s+/g, ' ').toUpperCase(); }
+
+    function toWitaDateKey(d) {
+      const wita = new Date(d.getTime() + (8 * 60 * 60 * 1000));
+      return `${wita.getUTCFullYear()}-${String(wita.getUTCMonth() + 1).padStart(2, '0')}-${String(wita.getUTCDate()).padStart(2, '0')}`;
+    }
 
     function parseDate(v) {
       if (v === undefined || v === null || v === '') return null;
+
       if (v instanceof Date && !isNaN(v)) return toWitaDateKey(v);
-      let s = String(v).trim();
-      if (!s) return null;
-      if (/^\d+(\.\d+)?$/.test(s)) {
-        const n = Number(s);
-        if (!isNaN(n)) {
-          const d = new Date(Date.UTC(1899, 11, 30 + Math.floor(n)));
-          return toWitaDateKey(d);
-        }
+
+      if (typeof v === 'number') {
+        const d = new Date(Date.UTC(1899, 11, 30 + Math.floor(v)));
+        return toWitaDateKey(d);
       }
-      s = s.replace(',', '.');
-      let m = s.match(/^(\d{4}-\d{2}-\d{2})(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?)?Z?$/);
-      if (m) return m[1];
-      m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+      const s = clean(v);
+
+      const iso = s.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)Z$/);
+      if (iso) return toWitaDateKey(new Date(s));
+
+      let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?)?$/);
       if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+
+      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+\d{1,2}:\d{2}:\d{2})?$/);
       if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+
       return null;
     }
 
@@ -690,41 +681,16 @@
         const k = groupKeyFn(r) || '-';
         if (!m.has(k)) m.set(k, { label: k, bkuK: 0, bkuD: 0, bkuT: 0, rtK: 0, rtD: 0, rtT: 0, absen: 0, score: 0 });
         const o = m.get(k);
-        o.bkuK += num(resolveField(r, COL.bkuK));
-        o.bkuD += num(resolveField(r, COL.bkuD));
-        o.bkuT += num(resolveField(r, COL.bkuT));
-        o.rtK += num(resolveField(r, COL.rtK));
-        o.rtD += num(resolveField(r, COL.rtD));
-        o.rtT += num(resolveField(r, COL.rtT));
+        o.bkuK += num(r[COL.bkuK]);
+        o.bkuD += num(r[COL.bkuD]);
+        o.bkuT += num(r[COL.bkuT]);
+        o.rtK += num(r[COL.rtK]);
+        o.rtD += num(r[COL.rtD]);
+        o.rtT += num(r[COL.rtT]);
         o.absen += 1;
         o.score = o.bkuD + o.rtD;
       });
       return [...m.values()];
-    }
-
-    function resolveField(row, aliases) {
-      for (const a of aliases) {
-        if (row[a] !== undefined && row[a] !== null && String(row[a]).trim() !== '') return row[a];
-      }
-      return '';
-    }
-
-    function buildMasterFallback() {
-      if (!petugasMaster.length) {
-        const map = new Map();
-        excelData.forEach(r => {
-          if (!r.__namaKey) return;
-          if (!map.has(r.__namaKey)) map.set(r.__namaKey, { nama: r.__nama, pml: r.__pml || '-' });
-          else if (!map.get(r.__namaKey).pml && r.__pml) map.get(r.__namaKey).pml = r.__pml;
-        });
-        petugasMaster = [...map.entries()].map(([key, v]) => ({ key, nama: v.nama, pml: v.pml || '-' })).sort((a, b) => a.pml.localeCompare(b.pml) || a.nama.localeCompare(b.nama));
-      }
-      const ds = new Set();
-      excelData.forEach(r => {
-        if (r.__absenValid) ds.add(r.__waktu);
-        if (r.__izinValid) ds.add(r.__izinDate);
-      });
-      availableDates = [...ds].filter(Boolean).sort();
     }
 
     async function loadSpreadsheet() {
@@ -732,19 +698,19 @@
         const res = await fetch(APPS_SCRIPT_URL, { mode: 'cors', cache: 'no-store' });
         const txt = await res.text();
         let raw;
-        try { raw = JSON.parse(txt) } catch (e) { throw new Error('Response bukan JSON: ' + txt.slice(0, 180)) }
+        try { raw = JSON.parse(txt); }
+        catch (e) { throw new Error('Response bukan JSON: ' + txt.slice(0, 180)); }
 
-        if (!raw || !Array.isArray(raw.absen) || !Array.isArray(raw.master)) {
-          throw new Error('JSON harus berisi {absen:[], master:[]}')
-        }
+        if (!Array.isArray(raw)) throw new Error('JSON tidak berupa array');
 
-        excelData = raw.absen.map((r, i) => {
-          const nama = clean(resolveField(r, COL.nama));
-          const pml = clean(resolveField(r, COL.pml));
-          const waktuRaw = resolveField(r, COL.waktu);
-          const izinRaw = resolveField(r, COL.tglIzin);
+        excelData = raw.map((r, i) => {
+          const nama = clean(r[COL.nama]);
+          const pml = clean(r[COL.pml]);
+          const waktuRaw = r[COL.waktu];
+          const izinRaw = r[COL.tglIzin];
           const waktu = parseDate(waktuRaw);
           const izinDate = parseDate(izinRaw);
+
           return {
             ...r,
             __idx: i,
@@ -755,27 +721,41 @@
             __izinRaw: izinRaw,
             __waktu: waktu,
             __izinDate: izinDate,
-            __absenValid: !!(nama && clean(resolveField(r, COL.sls)) && waktu),
-            __izinValid: !!(nama && clean(resolveField(r, COL.alasan)) && izinDate)
+            __absenValid: !!(nama && clean(r[COL.sls]) && waktu),
+            __izinValid: !!(nama && clean(r[COL.alasan]) && izinDate)
           };
         });
 
-        petugasMaster = raw.master.map((r, i) => ({
-          key: normalizeName(clean(resolveField(r, COL.nama))),
-          nama: clean(resolveField(r, COL.nama)),
-          pml: clean(resolveField(r, COL.pml)) || '-',
-          __idx: i
-        })).filter(x => x.nama).sort((a, b) => a.pml.localeCompare(b.pml) || a.nama.localeCompare(b.nama));
-
-        buildMasterFallback();
+        timData = [];
+        buildMaster();
         buildFilters();
         document.getElementById('dashboardContent').classList.remove('hidden');
-        showMessage(`✅ Data berhasil dimuat: ${excelData.length} baris absen, ${petugasMaster.length} petugas master, ${availableDates.length} tanggal valid.`);
+        showMessage(`✅ Data berhasil dimuat: ${excelData.length} baris, ${petugasMaster.length} petugas, ${availableDates.length} tanggal valid.`);
         updateDashboard();
       } catch (err) {
         console.error(err);
         showMessage(`❌ Gagal membaca spreadsheet: ${err.message}`, 'error');
       }
+    }
+
+    function buildMaster() {
+      const map = new Map();
+      excelData.forEach(r => {
+        if (!r.__namaKey) return;
+        if (!map.has(r.__namaKey)) map.set(r.__namaKey, { nama: r.__nama, pml: r.__pml });
+        else if (!map.get(r.__namaKey).pml && r.__pml) map.get(r.__namaKey).pml = r.__pml;
+      });
+
+      petugasMaster = [...map.entries()]
+        .map(([key, v]) => ({ key, nama: v.nama, pml: v.pml || '-' }))
+        .sort((a, b) => a.pml.localeCompare(b.pml) || a.nama.localeCompare(b.nama));
+
+      const ds = new Set();
+      excelData.forEach(r => {
+        if (r.__absenValid) ds.add(r.__waktu);
+        if (r.__izinValid) ds.add(r.__izinDate);
+      });
+      availableDates = [...ds].filter(Boolean).sort();
     }
 
     function buildFilters() {
@@ -793,7 +773,7 @@
         el.onchange = () => {
           if (id === 'filterPML') refreshPPLFilter();
           updateDashboard();
-        }
+        };
       });
 
       document.getElementById('resetBtn').onclick = () => {
@@ -824,15 +804,14 @@
       const keys = new Set(master.map(p => p.key));
       const absen = excelData.filter(r => r.__absenValid && r.__waktu === date && keys.has(r.__namaKey));
       const izin = excelData.filter(r => r.__izinValid && r.__izinDate === date && keys.has(r.__namaKey));
+
       return { date, pml, ppl, master, keys, absen, izin };
     }
 
     function updateDashboard() {
       const s = currentScope();
-      if (!s.date) {
-        showMessage('⚠️ Belum ada tanggal valid yang bisa dipilih. Cek format tanggal di spreadsheet.', 'warn');
-        return;
-      }
+      if (!s.date) return;
+
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
       const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
@@ -859,18 +838,9 @@
       let rowsPml = excelData.filter(r => r.__absenValid && r.__waktu === s.date);
       if (s.ppl !== 'ALL') rowsPml = rowsPml.filter(r => r.__namaKey === s.ppl);
 
-      const pmlAgg = aggregateBy(rowsPml, r => r.__pml || (petugasMaster.find(p => p.key === r.__namaKey) || {}).pml).sort((a, b) => a.label.localeCompare(b.label));
-      chartBkuPML = makeChart('chartBkuPML', chartBkuPML, pmlAgg.map(x => x.label), [
-        { label: 'BKU dikunjungi', data: pmlAgg.map(x => x.bkuK) },
-        { label: 'BKU didata', data: pmlAgg.map(x => x.bkuD) },
-        { label: 'BKU menolak', data: pmlAgg.map(x => x.bkuT) }
-      ], 'Jumlah BKU');
-
-      chartRtPML = makeChart('chartRtPML', chartRtPML, pmlAgg.map(x => x.label), [
-        { label: 'RT dikunjungi', data: pmlAgg.map(x => x.rtK) },
-        { label: 'RT didata', data: pmlAgg.map(x => x.rtD) },
-        { label: 'RT menolak', data: pmlAgg.map(x => x.rtT) }
-      ], 'Jumlah rumah tangga');
+      const pmlAgg = aggregateBy(rowsPml, r => r.__pml || ((petugasMaster.find(p => p.key === r.__namaKey) || {}).pml)).sort((a, b) => a.label.localeCompare(b.label));
+      chartBkuPML = makeChart('chartBkuPML', chartBkuPML, pmlAgg.map(x => x.label), [{ label: 'BKU dikunjungi', data: pmlAgg.map(x => x.bkuK) }, { label: 'BKU didata', data: pmlAgg.map(x => x.bkuD) }, { label: 'BKU menolak', data: pmlAgg.map(x => x.bkuT) }], 'Jumlah BKU');
+      chartRtPML = makeChart('chartRtPML', chartRtPML, pmlAgg.map(x => x.label), [{ label: 'RT dikunjungi', data: pmlAgg.map(x => x.rtK) }, { label: 'RT didata', data: pmlAgg.map(x => x.rtD) }, { label: 'RT menolak', data: pmlAgg.map(x => x.rtT) }], 'Jumlah rumah tangga');
 
       const showDetail = s.pml !== 'ALL';
       document.getElementById('detailBkuEmpty').classList.toggle('hidden', showDetail);
@@ -880,24 +850,15 @@
 
       if (showDetail) {
         const pplAgg = aggregateBy(s.absen, r => r.__nama).sort((a, b) => b.score - a.score);
-        chartBkuPPL = makeChart('chartBkuPPL', chartBkuPPL, pplAgg.map(x => x.label), [
-          { label: 'BKU dikunjungi', data: pplAgg.map(x => x.bkuK) },
-          { label: 'BKU didata', data: pplAgg.map(x => x.bkuD) },
-          { label: 'BKU menolak', data: pplAgg.map(x => x.bkuT) }
-        ], 'Jumlah BKU');
-
-        chartRtPPL = makeChart('chartRtPPL', chartRtPPL, pplAgg.map(x => x.label), [
-          { label: 'RT dikunjungi', data: pplAgg.map(x => x.rtK) },
-          { label: 'RT didata', data: pplAgg.map(x => x.rtD) },
-          { label: 'RT menolak', data: pplAgg.map(x => x.rtT) }
-        ], 'Jumlah rumah tangga');
+        chartBkuPPL = makeChart('chartBkuPPL', chartBkuPPL, pplAgg.map(x => x.label), [{ label: 'BKU dikunjungi', data: pplAgg.map(x => x.bkuK) }, { label: 'BKU didata', data: pplAgg.map(x => x.bkuD) }, { label: 'BKU menolak', data: pplAgg.map(x => x.bkuT) }], 'Jumlah BKU');
+        chartRtPPL = makeChart('chartRtPPL', chartRtPPL, pplAgg.map(x => x.label), [{ label: 'RT dikunjungi', data: pplAgg.map(x => x.rtK) }, { label: 'RT didata', data: pplAgg.map(x => x.rtD) }, { label: 'RT menolak', data: pplAgg.map(x => x.rtT) }], 'Jumlah rumah tangga');
       }
     }
 
     function rankData(s, level) {
       let rows = s.absen;
       if (level === 'PML') {
-        const agg = aggregateBy(rows, r => r.__pml || (petugasMaster.find(p => p.key === r.__namaKey) || {}).pml);
+        const agg = aggregateBy(rows, r => r.__pml || ((petugasMaster.find(p => p.key === r.__namaKey) || {}).pml));
         return agg.map(x => ({ ...x, didata: x.bkuD + x.rtD, score: x.bkuD + x.rtD - (x.bkuT + x.rtT) }));
       }
       const agg = aggregateBy(rows, r => r.__namaKey);
@@ -924,8 +885,7 @@
       }
       tb.innerHTML = rows.map(r => isPPL
         ? `<tr><td>${esc(r.label)}</td><td>${esc(r.pml)}</td><td class="num"><span class="badge neutral">${r.score}</span></td><td class="num">${r.didata}</td></tr>`
-        : `<tr><td>${esc(r.label)}</td><td class="num"><span class="badge neutral">${r.score}</span></td><td class="num">${r.didata}</td></tr>`
-      ).join('');
+        : `<tr><td>${esc(r.label)}</td><td class="num"><span class="badge neutral">${r.score}</span></td><td class="num">${r.didata}</td></tr>`).join('');
     }
 
     function twoDayNoWork(s) {
@@ -947,16 +907,16 @@
     }
 
     function renderInsights(s) {
-      const totalRTK = s.absen.reduce((a, r) => a + num(resolveField(r, COL.rtK)), 0),
-        totalRTD = s.absen.reduce((a, r) => a + num(resolveField(r, COL.rtD)), 0),
-        totalRTT = s.absen.reduce((a, r) => a + num(resolveField(r, COL.rtT)), 0);
+      const totalRTK = s.absen.reduce((a, r) => a + num(r[COL.rtK]), 0),
+        totalRTD = s.absen.reduce((a, r) => a + num(r[COL.rtD]), 0),
+        totalRTT = s.absen.reduce((a, r) => a + num(r[COL.rtT]), 0);
 
       const jalan = new Set(s.absen.map(r => r.__namaKey)).size;
       const sukses = totalRTK ? ((totalRTD / totalRTK) * 100) : 0;
       const tolak = totalRTK ? ((totalRTT / totalRTK) * 100) : 0;
       const avg = jalan ? (totalRTD / jalan) : 0;
-      const zero = s.absen.filter(r => num(resolveField(r, COL.rtD)) === 0).length;
-      const top = s.absen.slice().sort((a, b) => num(resolveField(b, COL.rtD)) - num(resolveField(a, COL.rtD)))[0];
+      const zero = s.absen.filter(r => num(r[COL.rtD]) === 0).length;
+      const top = s.absen.slice().sort((a, b) => num(b[COL.rtD]) - num(a[COL.rtD]))[0];
 
       document.getElementById('rtInsights').innerHTML = [
         ['RT dikunjungi', totalRTK],
@@ -966,13 +926,13 @@
         ['Tingkat penolakan', tolak.toFixed(1) + '%'],
         ['Rata-rata RT didata / petugas jalan', avg.toFixed(1)],
         ['Petugas jalan tapi 0 RT didata', zero],
-        ['PPL RT didata tertinggi', top ? `${esc(top.__nama)} (${num(resolveField(top, COL.rtD))})` : '-']
+        ['PPL RT didata tertinggi', top ? `${esc(top.__nama)} (${num(top[COL.rtD])})` : '-']
       ].map(x => `<div class="insight"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('');
     }
 
     function renderWordCloud(s) {
       const stop = new Set('dan yang di ke dari untuk dengan karena pada tidak ada ini itu saya kami sudah belum dalam adalah agar atau serta masih lapor permasalahan masalah petugas'.split(' '));
-      const text = s.absen.map(r => clean(resolveField(r, COL.masalah))).filter(Boolean).join(' ');
+      const text = s.absen.map(r => clean(r[COL.masalah])).filter(Boolean).join(' ');
       const freq = {};
       text.toLowerCase().replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, ' ').split(/\s+/).forEach(w => {
         if (w.length < 3 || stop.has(w)) return;
@@ -990,10 +950,10 @@
 
     function renderTables(s, tidak) {
       const ab = document.querySelector('#absenTable tbody');
-      ab.innerHTML = s.absen.length ? s.absen.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.__nama)}</td><td>${esc(r.__pml)}</td><td>${esc(resolveField(r, COL.sls))}</td><td class="num">${num(resolveField(r, COL.bkuD))}</td><td class="num">${num(resolveField(r, COL.rtD))}</td></tr>`).join('') : '<tr><td colspan="6" style="text-align:center">Tidak ada petugas absen pada filter ini.</td></tr>';
+      ab.innerHTML = s.absen.length ? s.absen.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.__nama)}</td><td>${esc(r.__pml)}</td><td>${esc(r[COL.sls])}</td><td class="num">${num(r[COL.bkuD])}</td><td class="num">${num(r[COL.rtD])}</td></tr>`).join('') : '<tr><td colspan="6" style="text-align:center">Tidak ada petugas absen pada filter ini.</td></tr>';
 
       const iz = document.querySelector('#izinTable tbody');
-      iz.innerHTML = s.izin.length ? s.izin.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.__nama)}</td><td>${esc(r.__pml)}</td><td>${esc(resolveField(r, COL.alasan))}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center">Tidak ada petugas izin pada filter ini.</td></tr>';
+      iz.innerHTML = s.izin.length ? s.izin.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.__nama)}</td><td>${esc(r.__pml)}</td><td>${esc(r[COL.alasan])}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center">Tidak ada petugas izin pada filter ini.</td></tr>';
 
       const tb = document.querySelector('#tidakAbsenTable tbody');
       tb.innerHTML = tidak.length ? tidak.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.nama)}</td><td>${esc(p.pml)}</td><td><span class="badge bad">Tidak/belum absen</span></td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center">Semua petugas pada filter ini sudah absen atau izin.</td></tr>';
