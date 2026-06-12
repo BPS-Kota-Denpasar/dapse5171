@@ -847,7 +847,7 @@
 
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
-      const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
+      const tidak = petugasMaster.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
       const dua = twoDayNoWork(s);
 
       document.getElementById('totalPetugas').textContent = totalPetugas;
@@ -946,7 +946,7 @@
       const d1 = availableDates[idx - 1], d2 = s.date;
       const rows = excelData.filter(r => r.__absenValid && (r.__waktu === d1 || r.__waktu === d2));
       const worked = new Set(rows.map(r => r.__namaKey + '|' + r.__waktu));
-      return s.master.filter(p => !worked.has(p.key + '|' + d1) && !worked.has(p.key + '|' + d2)).map(p => ({ ...p, dates: `${d1} & ${d2}` }));
+      return petugasMaster.filter(p => !worked.has(p.key + '|' + d1) && !worked.has(p.key + '|' + d2)).map(p => ({ ...p, dates: `${d1} & ${d2}` }));
     }
 
     function renderStreak(rows) {
