@@ -824,6 +824,7 @@
       const keys = new Set(master.map(p => p.key));
       const absen = excelData.filter(r => r.__absenValid && r.__waktu === date && keys.has(r.__namaKey));
       const izin = excelData.filter(r => r.__izinValid && r.__izinDate === date && keys.has(r.__namaKey));
+
       return { date, pml, ppl, master, keys, absen, izin };
     }
 
@@ -834,7 +835,7 @@
         return;
       }
 
-      const totalPetugas = petugasMaster.length;
+      const totalPetugas = s.master.length;
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
       const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
