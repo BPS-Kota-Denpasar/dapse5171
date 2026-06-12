@@ -834,18 +834,6 @@
       return { date, pml, ppl, master, keys, absen, izin };
     }
 
-    function getBelumAbsen(date) {
-      const hadir = new Set();
-      const izin = new Set();
-
-      excelData.forEach(r => {
-        if (r.__absenValid && r.__waktu === date) hadir.add(r.__namaKey);
-        if (r.__izinValid && r.__izinDate === date) izin.add(r.__namaKey);
-      });
-
-      return petugasMaster.filter(p => !hadir.has(p.key) && !izin.has(p.key));
-    }
-
     function updateDashboard() {
       const s = currentScope();
       if (!s.date) {
@@ -857,7 +845,11 @@
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
 
-      const tidak = getBelumAbsen(s.date);
+      const tidak = allMaster.filter(p => {
+        const sudahAbsen = absenKeys.has(p.key);
+        const sudahIzin = izinKeys.has(p.key);
+        return !sudahAbsen && !sudahIzin;
+      });
 
       const dua = twoDayNoWork();
 
