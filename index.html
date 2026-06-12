@@ -833,12 +833,14 @@
         showMessage('⚠️ Belum ada tanggal valid yang bisa dipilih. Cek format tanggal di spreadsheet.', 'warn');
         return;
       }
+
+      const totalPetugas = petugasMaster.length;
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
       const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
       const dua = twoDayNoWork(s);
 
-      document.getElementById('totalPetugas').textContent = s.master.length;
+      document.getElementById('totalPetugas').textContent = totalPetugas;
       document.getElementById('absenBerangkat').textContent = absenKeys.size;
       document.getElementById('izin').textContent = izinKeys.size;
       document.getElementById('belumAbsen').textContent = tidak.length;
