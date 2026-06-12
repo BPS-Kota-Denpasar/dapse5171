@@ -813,7 +813,7 @@
 
     function refreshPPLFilter() {
       const pml = document.getElementById('filterPML').value;
-      let list = petugasMaster;
+      let list = window.__raw.master;
       if (pml !== 'ALL') list = list.filter(p => p.pml === pml);
       document.getElementById('filterPPL').innerHTML = '<option value="ALL">Semua PPL</option>' + list.map(p => `<option value="${esc(p.key)}">${esc(p.nama)}</option>`).join('');
     }
@@ -823,7 +823,7 @@
         pml = document.getElementById('filterPML').value,
         ppl = document.getElementById('filterPPL').value;
 
-      let master = petugasMaster;
+      let master = window.__raw.master;
       if (pml !== 'ALL') master = master.filter(p => p.pml === pml);
       if (ppl !== 'ALL') master = master.filter(p => p.key === ppl);
 
@@ -847,7 +847,7 @@
 
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
-      const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
+      const tidak = window.__raw.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
       const dua = twoDayNoWork(s);
 
       document.getElementById('totalPetugas').textContent = totalPetugas;
