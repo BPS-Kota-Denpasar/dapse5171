@@ -640,7 +640,10 @@
 
       const s = clean(v);
 
-      let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?)?(?:Z)?$/);
+      const iso = s.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)Z$/);
+      if (iso) return toWitaDateKey(new Date(s));
+
+      let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?)?$/);
       if (m) return `${m[1]}-${m[2]}-${m[3]}`;
 
       m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+\d{1,2}:\d{2}:\d{2})?$/);
