@@ -813,7 +813,7 @@
 
     function refreshPPLFilter() {
       const pml = document.getElementById('filterPML').value;
-      let list = window.__raw.master;
+      let list = petugasMaster;
       if (pml !== 'ALL') list = list.filter(p => p.pml === pml);
       document.getElementById('filterPPL').innerHTML = '<option value="ALL">Semua PPL</option>' + list.map(p => `<option value="${esc(p.key)}">${esc(p.nama)}</option>`).join('');
     }
@@ -823,7 +823,7 @@
         pml = document.getElementById('filterPML').value,
         ppl = document.getElementById('filterPPL').value;
 
-      let master = window.__raw.master;
+      let master = petugasMaster;
       if (pml !== 'ALL') master = master.filter(p => p.pml === pml);
       if (ppl !== 'ALL') master = master.filter(p => p.key === ppl);
 
