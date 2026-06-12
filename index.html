@@ -733,16 +733,30 @@
     }
 
     function currentScope() {
-      const date = document.getElementById('dateSelect').value, pml = document.getElementById('filterPML').value, ppl = document.getElementById('filterPPL').value;
+      const date = document.getElementById('dateSelect').value;
+      const pml = document.getElementById('filterPML').value;
+      const ppl = document.getElementById('filterPPL').value;
+
       let master = petugasMaster;
       if (pml !== 'ALL') master = master.filter(p => p.pml === pml);
       if (ppl !== 'ALL') master = master.filter(p => p.key === ppl);
+
       const keys = new Set(master.map(p => p.key));
-      const absen = excelData.filter(r => r.__absenValid && r.__waktu === date && keys.has(r.__namaKey));
-      const izin = excelData.filter(r => r.__izinValid && r.__izinDate === date && keys.has(r.__namaKey));
+
+      const absen = excelData.filter(r =>
+        r.__absenValid &&
+        r.__waktu === date &&
+        (keys.has(r.__namaKey) || master.some(p => normalizeName(p.nama) === r.__namaKey))
+      );
+
+      const izin = excelData.filter(r =>
+        r.__izinValid &&
+        r.__izinDate === date &&
+        (keys.has(r.__namaKey) || master.some(p => normalizeName(p.nama) === r.__namaKey))
+      );
+
       return { date, pml, ppl, master, keys, absen, izin };
     }
-
     function updateDashboard() {
       const s = currentScope();
       if (!s.date) { showMessage('⚠️ Belum ada tanggal valid yang bisa dipilih. Cek format tanggal di spreadsheet.', 'warn'); return; }
@@ -750,7 +764,9 @@
       const hadIzin = new Set(s.izin.map(r => r.__namaKey));
       const tidak = s.master.filter(p => !hadAbsen.has(p.key) && !hadIzin.has(p.key));
       const dua = twoDayNoWork(s);
-      document.getElementById('totalPetugas').textContent = s.master.length;
+      document.getElementById('totalPetugas').textContent = (document.getElementById('filterPML').value === 'ALL' && document.getElementById('filterPPL').value === 'ALL')
+        ? petugasMaster.length
+        : s.master.length;
       document.getElementById('absenBerangkat').textContent = hadAbsen.size;
       document.getElementById('izin').textContent = hadIzin.size;
       document.getElementById('belumAbsen').textContent = tidak.length;
