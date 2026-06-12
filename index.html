@@ -701,9 +701,11 @@
         try { raw = JSON.parse(txt); }
         catch (e) { throw new Error('Response bukan JSON: ' + txt.slice(0, 180)); }
 
-        if (!Array.isArray(raw)) throw new Error('JSON tidak berupa array');
+        if (!raw || !Array.isArray(raw.absen) || !Array.isArray(raw.master)) {
+          throw new Error('JSON harus berisi {absen:[], master:[]}');
+        }
 
-        excelData = raw.map((r, i) => {
+        excelData = raw.absen.map((r, i) => {
           const nama = clean(r[COL.nama]);
           const pml = clean(r[COL.pml]);
           const waktuRaw = r[COL.waktu];
@@ -726,11 +728,19 @@
           };
         });
 
-        timData = [];
-        buildMaster();
+        petugasMaster = raw.master
+          .map((r, i) => ({
+            key: normalizeName(clean(r['Nama Petugas'])),
+            nama: clean(r['Nama Petugas']),
+            pml: clean(r['PML']) || '-',
+            __idx: i
+          }))
+          .filter(x => x.nama)
+          .sort((a, b) => a.pml.localeCompare(b.pml) || a.nama.localeCompare(b.nama));
+
         buildFilters();
         document.getElementById('dashboardContent').classList.remove('hidden');
-        showMessage(`✅ Data berhasil dimuat: ${excelData.length} baris, ${petugasMaster.length} petugas, ${availableDates.length} tanggal valid.`);
+        showMessage(`✅ Data berhasil dimuat: ${excelData.length} baris absen, ${petugasMaster.length} petugas master, ${availableDates.length} tanggal valid.`);
         updateDashboard();
       } catch (err) {
         console.error(err);
