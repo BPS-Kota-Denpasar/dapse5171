@@ -632,12 +632,12 @@
     };
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuMnuC4fSeZCHe7x0cAVmlDumBU_YgIgc4N5yAbOSdST3_xpW23gits_-2Fu6lmxJo/exec?format=json&ts=' + Date.now();
 
-    function clean(v) { return (v === undefined || v === null) ? '' : String(v).trim() }
-    function num(v) { if (v === undefined || v === null || v === '') return 0; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n }
-    function esc(s) { return clean(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\'': '&#39;', '"': '&quot;' }[c])) }
-    function normalizeName(s) { return clean(s).replace(/\s+/g, ' ').toUpperCase() }
-    function pick(obj, keys) { for (const k of keys) { if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k] } return '' }
-    function toWitaDateKey(d) { const wita = new Date(d.getTime() + (8 * 60 * 60 * 1000)); return `${wita.getUTCFullYear()}-${String(wita.getUTCMonth() + 1).padStart(2, '0')}-${String(wita.getUTCDate()).padStart(2, '0')}` }
+    function clean(v) { return (v === undefined || v === null) ? '' : String(v).trim(); }
+    function num(v) { if (v === undefined || v === null || v === '') return 0; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n; }
+    function esc(s) { return clean(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\'': '&#39;', '"': '&quot;' }[c])); }
+    function normalizeName(s) { return clean(s).replace(/\s+/g, ' ').toUpperCase(); }
+    function pick(obj, keys) { for (const k of keys) { if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k]; } return ''; }
+    function toWitaDateKey(d) { const wita = new Date(d.getTime() + (8 * 60 * 60 * 1000)); return `${wita.getUTCFullYear()}-${String(wita.getUTCMonth() + 1).padStart(2, '0')}-${String(wita.getUTCDate()).padStart(2, '0')}`; }
 
     function parseDate(v) {
       if (v === undefined || v === null || v === '') return null;
@@ -732,10 +732,12 @@
         const res = await fetch(APPS_SCRIPT_URL, { mode: 'cors', cache: 'no-store' });
         const txt = await res.text();
         let raw;
-        try { raw = JSON.parse(txt) } catch (e) { throw new Error('Response bukan JSON: ' + txt.slice(0, 180)) }
+        try { raw = JSON.parse(txt); } catch (e) { throw new Error('Response bukan JSON: ' + txt.slice(0, 180)); }
+
+        window.__raw = raw;
 
         if (!raw || !Array.isArray(raw.absen) || !Array.isArray(raw.master)) {
-          throw new Error('JSON harus berisi {absen:[], master:[]}')
+          throw new Error('JSON harus berisi {absen:[], master:[]}');
         }
 
         excelData = raw.absen.map((r, i) => {
@@ -793,7 +795,7 @@
         el.onchange = () => {
           if (id === 'filterPML') refreshPPLFilter();
           updateDashboard();
-        }
+        };
       });
 
       document.getElementById('resetBtn').onclick = () => {
@@ -835,9 +837,10 @@
         return;
       }
 
-      const totalPetugas = document.getElementById('filterPML').value === 'ALL' && document.getElementById('filterPPL').value === 'ALL'
-        ? raw.master.length
+      const totalPetugas = (document.getElementById('filterPML').value === 'ALL' && document.getElementById('filterPPL').value === 'ALL')
+        ? window.__raw.master.length
         : s.master.length;
+
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
       const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
