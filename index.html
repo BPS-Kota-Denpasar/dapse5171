@@ -933,7 +933,19 @@
       ).join('');
     }
 
-    function twoDayNoWork(s) { const idx = availableDates.indexOf(s.date); if (idx < 1) return []; const d1 = availableDates[idx - 1], d2 = s.date; const rows = excelData.filter(r => r.__absenValid && (r.__waktu === d1 || r.__waktu === d2)); const worked = new Set(rows.map(r => r.__namaKey + '|' + r.__waktu)); return s.master.filter(p => !worked.has(p.key + '|' + d1) && !worked.has(p.key + '|' + d2)).map(p => ({ ...p, dates: `${d1} & ${d2}` })); }
+    function twoDayNoWork(s) {
+      const idx = availableDates.indexOf(s.date);
+      if (idx < 1) return [];
+
+      const d1 = availableDates[idx - 1];
+      const d2 = s.date;
+
+      return s.master.filter(p => {
+        const worked1 = excelData.some(r => r.__absenValid && r.__namaKey === p.key && r.__waktu === d1);
+        const worked2 = excelData.some(r => r.__absenValid && r.__namaKey === p.key && r.__waktu === d2);
+        return !worked1 && !worked2;
+      }).map(p => ({ ...p, dates: `${d1} & ${d2}` }));
+    }
 
     function renderStreak(rows) {
       const tb = document.querySelector('#streakTable tbody');
