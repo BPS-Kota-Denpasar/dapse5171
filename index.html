@@ -714,6 +714,15 @@
     }
 
     function buildMasterFallback() {
+      if (!petugasMaster.length) {
+        const map = new Map();
+        excelData.forEach(r => {
+          if (!r.__namaKey) return;
+          if (!map.has(r.__namaKey)) map.set(r.__namaKey, { nama: r.__nama, pml: r.__pml || '-' });
+          else if (!map.get(r.__namaKey).pml && r.__pml) map.get(r.__namaKey).pml = r.__pml;
+        });
+        petugasMaster = [...map.entries()].map(([key, v]) => ({ key, nama: v.nama, pml: v.pml || '-' })).sort((a, b) => a.pml.localeCompare(b.pml) || a.nama.localeCompare(b.nama));
+      }
       const ds = new Set();
       excelData.forEach(r => {
         if (r.__absenValid) ds.add(r.__waktu);
@@ -806,9 +815,7 @@
       const pml = document.getElementById('filterPML').value;
       let list = petugasMaster;
       if (pml !== 'ALL') list = list.filter(p => p.pml === pml);
-      document.getElementById('filterPPL').innerHTML =
-        '<option value="ALL">Semua PPL</option>' +
-        list.map(p => `<option value="${esc(p.key)}">${esc(p.nama)}</option>`).join('');
+      document.getElementById('filterPPL').innerHTML = '<option value="ALL">Semua PPL</option>' + list.map(p => `<option value="${esc(p.key)}">${esc(p.nama)}</option>`).join('');
     }
 
     function currentScope() {
@@ -936,15 +943,10 @@
     function twoDayNoWork(s) {
       const idx = availableDates.indexOf(s.date);
       if (idx < 1) return [];
-
-      const d1 = availableDates[idx - 1];
-      const d2 = s.date;
-
-      return s.master.filter(p => {
-        const worked1 = excelData.some(r => r.__absenValid && r.__namaKey === p.key && r.__waktu === d1);
-        const worked2 = excelData.some(r => r.__absenValid && r.__namaKey === p.key && r.__waktu === d2);
-        return !worked1 && !worked2;
-      }).map(p => ({ ...p, dates: `${d1} & ${d2}` }));
+      const d1 = availableDates[idx - 1], d2 = s.date;
+      const rows = excelData.filter(r => r.__absenValid && (r.__waktu === d1 || r.__waktu === d2));
+      const worked = new Set(rows.map(r => r.__namaKey + '|' + r.__waktu));
+      return s.master.filter(p => !worked.has(p.key + '|' + d1) && !worked.has(p.key + '|' + d2)).map(p => ({ ...p, dates: `${d1} & ${d2}` }));
     }
 
     function renderStreak(rows) {
