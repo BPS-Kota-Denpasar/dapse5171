@@ -847,7 +847,7 @@
 
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
-      const tidak = window.__raw.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
+      const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
       const dua = twoDayNoWork(s);
 
       document.getElementById('totalPetugas').textContent = totalPetugas;
