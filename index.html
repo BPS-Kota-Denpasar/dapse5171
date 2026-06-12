@@ -833,12 +833,22 @@
         showMessage('⚠️ Belum ada tanggal valid yang bisa dipilih. Cek format tanggal di spreadsheet.', 'warn');
         return;
       }
+
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
-      const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
-      const dua = twoDayNoWork(s);
+      const scopeKeys = new Set(s.master.map(p => p.key));
 
-      document.getElementById('totalPetugas').textContent = s.master.length;
+      const relMaster = petugasMaster.filter(p =>
+        scopeKeys.has(p.key) && (
+          s.date === '' ||
+          excelData.some(r => r.__namaKey === p.key && (r.__waktu === s.date || r.__izinDate === s.date))
+        )
+      );
+
+      const tidak = relMaster.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
+      const dua = twoDayNoWork({ ...s, master: relMaster });
+
+      document.getElementById('totalPetugas').textContent = relMaster.length;
       document.getElementById('absenBerangkat').textContent = absenKeys.size;
       document.getElementById('izin').textContent = izinKeys.size;
       document.getElementById('belumAbsen').textContent = tidak.length;
@@ -847,12 +857,12 @@
       document.getElementById('dateInfo').innerHTML =
         `📅 Tanggal: <b>${s.date}</b> | PML: <b>${s.pml === 'ALL' ? 'Semua' : esc(s.pml)}</b> | PPL: <b>${s.ppl === 'ALL' ? 'Semua' : esc((petugasMaster.find(p => p.key === s.ppl) || {}).nama || '')}</b> | Absen: <b>${absenKeys.size}</b> | Izin: <b>${izinKeys.size}</b> | Tidak/belum absen: <b>${tidak.length}</b>`;
 
-      renderCharts(s);
-      renderRankings(s);
+      renderCharts({ ...s, master: relMaster });
+      renderRankings({ ...s, master: relMaster });
       renderStreak(dua);
-      renderInsights(s);
-      renderWordCloud(s);
-      renderTables(s, tidak);
+      renderInsights({ ...s, master: relMaster, absen: s.absen, izin: s.izin });
+      renderWordCloud({ ...s, master: relMaster, absen: s.absen });
+      renderTables({ ...s, master: relMaster, absen: s.absen, izin: s.izin }, tidak);
     }
 
     function renderCharts(s) {
