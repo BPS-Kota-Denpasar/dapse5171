@@ -811,11 +811,36 @@
       };
     }
 
+    function getMasterList() {
+      return Array.isArray(window.__raw?.master) ? window.__raw.master : [];
+    }
+
+    function masterNama(r) {
+      return clean(r?.['PPL'] ?? r?.['Nama Petugas'] ?? r?.['nama petugas'] ?? r?.['Nama'] ?? r?.['nama'] ?? '');
+    }
+
+    function masterPml(r) {
+      return clean(r?.['PML'] ?? r?.['pml'] ?? '');
+    }
+
+    function normalizedMaster() {
+      return getMasterList()
+        .map((r, i) => ({
+          key: normalizeName(masterNama(r)),
+          nama: masterNama(r),
+          pml: masterPml(r) || '-',
+          __idx: i
+        }))
+        .filter(x => x.nama);
+    }
+
     function refreshPPLFilter() {
       const pml = document.getElementById('filterPML').value;
-      let list = petugasMaster;
+      let list = normalizedMaster();
       if (pml !== 'ALL') list = list.filter(p => p.pml === pml);
-      document.getElementById('filterPPL').innerHTML = '<option value="ALL">Semua PPL</option>' + list.map(p => `<option value="${esc(p.key)}">${esc(p.nama)}</option>`).join('');
+      document.getElementById('filterPPL').innerHTML =
+        '<option value="ALL">Semua PPL</option>' +
+        list.map(p => `<option value="${esc(p.key)}">${esc(p.nama)}</option>`).join('');
     }
 
     function currentScope() {
@@ -823,8 +848,7 @@
         pml = document.getElementById('filterPML').value,
         ppl = document.getElementById('filterPPL').value;
 
-
-      let master = petugasMaster;
+      let master = normalizedMaster().sort((a, b) => a.pml.localeCompare(b.pml) || a.nama.localeCompare(b.nama));
       if (pml !== 'ALL') master = master.filter(p => p.pml === pml);
       if (ppl !== 'ALL') master = master.filter(p => p.key === ppl);
 
@@ -842,23 +866,19 @@
         return;
       }
 
-      const totalPetugas = (document.getElementById('filterPML').value === 'ALL' && document.getElementById('filterPPL').value === 'ALL')
-        ? window.__raw.master.length
-        : s.master.length;
-
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
-      const tidak = petugasMaster.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
+      const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
       const dua = twoDayNoWork(s);
 
-      document.getElementById('totalPetugas').textContent = totalPetugas;
+      document.getElementById('totalPetugas').textContent = s.master.length;
       document.getElementById('absenBerangkat').textContent = absenKeys.size;
       document.getElementById('izin').textContent = izinKeys.size;
       document.getElementById('belumAbsen').textContent = tidak.length;
       document.getElementById('duaHariTidakJalan').textContent = dua.length;
 
       document.getElementById('dateInfo').innerHTML =
-        `📅 Tanggal: <b>${s.date}</b> | PML: <b>${s.pml === 'ALL' ? 'Semua' : esc(s.pml)}</b> | PPL: <b>${s.ppl === 'ALL' ? 'Semua' : esc((petugasMaster.find(p => p.key === s.ppl) || {}).nama || '')}</b> | Absen: <b>${absenKeys.size}</b> | Izin: <b>${izinKeys.size}</b> | Tidak/belum absen: <b>${tidak.length}</b>`;
+        `📅 Tanggal: <b>${s.date}</b> | PML: <b>${s.pml === 'ALL' ? 'Semua' : esc(s.pml)}</b> | PPL: <b>${s.ppl === 'ALL' ? 'Semua' : esc((s.master.find(p => p.key === s.ppl) || {}).nama || '')}</b> | Absen: <b>${absenKeys.size}</b> | Izin: <b>${izinKeys.size}</b> | Tidak/belum absen: <b>${tidak.length}</b>`;
 
       renderCharts(s);
       renderRankings(s);
@@ -872,7 +892,10 @@
       let rowsPml = excelData.filter(r => r.__absenValid && r.__waktu === s.date);
       if (s.ppl !== 'ALL') rowsPml = rowsPml.filter(r => r.__namaKey === s.ppl);
 
-      const pmlAgg = aggregateBy(rowsPml, r => r.__pml || (petugasMaster.find(p => p.key === r.__namaKey) || {}).pml).sort((a, b) => a.label.localeCompare(b.label));
+      const masterMap = new Map(normalizedMaster().map(p => [p.key, p]));
+      const pmlAgg = aggregateBy(rowsPml, r => r.__pml || (masterMap.get(r.__namaKey) || {}).pml)
+        .sort((a, b) => a.label.localeCompare(b.label));
+
       chartBkuPML = makeChart('chartBkuPML', chartBkuPML, pmlAgg.map(x => x.label), [
         { label: 'BKU dikunjungi', data: pmlAgg.map(x => x.bkuK) },
         { label: 'BKU didata', data: pmlAgg.map(x => x.bkuD) },
@@ -909,14 +932,27 @@
 
     function rankData(s, level) {
       let rows = s.absen;
+      const masterMap = new Map(normalizedMaster().map(p => [p.key, p]));
+
       if (level === 'PML') {
-        const agg = aggregateBy(rows, r => r.__pml || (petugasMaster.find(p => p.key === r.__namaKey) || {}).pml);
-        return agg.map(x => ({ ...x, didata: x.bkuD + x.rtD, score: x.bkuD + x.rtD - (x.bkuT + x.rtT) }));
+        const agg = aggregateBy(rows, r => r.__pml || (masterMap.get(r.__namaKey) || {}).pml);
+        return agg.map(x => ({
+          ...x,
+          didata: x.bkuD + x.rtD,
+          score: x.bkuD + x.rtD - (x.bkuT + x.rtT)
+        }));
       }
+
       const agg = aggregateBy(rows, r => r.__namaKey);
       return agg.map(x => {
-        const p = petugasMaster.find(p => p.key === x.label) || {};
-        return { ...x, label: p.nama || x.label, pml: p.pml || '-', didata: x.bkuD + x.rtD, score: x.bkuD + x.rtD - (x.bkuT + x.rtT) };
+        const p = masterMap.get(x.label) || {};
+        return {
+          ...x,
+          label: p.nama || x.label,
+          pml: p.pml || '-',
+          didata: x.bkuD + x.rtD,
+          score: x.bkuD + x.rtD - (x.bkuT + x.rtT)
+        };
       });
     }
 
@@ -945,11 +981,12 @@
       const idx = availableDates.indexOf(s.date);
       if (idx < 1) return [];
       const d1 = availableDates[idx - 1], d2 = s.date;
-      const rows = excelData.filter(r => r.__absenValid && (r.__waktu === d1 || r.__waktu === d2));
-      const worked = new Set(rows.map(r => r.__namaKey + '|' + r.__waktu));
-      return petugasMaster.filter(p => !worked.has(p.key + '|' + d1) && !worked.has(p.key + '|' + d2)).map(p => ({ ...p, dates: `${d1} & ${d2}` }));
+      return s.master.filter(p => {
+        const worked1 = excelData.some(r => r.__absenValid && r.__namaKey === p.key && r.__waktu === d1);
+        const worked2 = excelData.some(r => r.__absenValid && r.__namaKey === p.key && r.__waktu === d2);
+        return !worked1 && !worked2;
+      }).map(p => ({ ...p, dates: `${d1} & ${d2}` }));
     }
-
     function renderStreak(rows) {
       const tb = document.querySelector('#streakTable tbody');
       if (!rows.length) {
