@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Absen Petugas Sensus - Final Akurat</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg1: #667eea;
+      --bg2: #764ba2;
+      --card: #fff;
+      --text: #222;
+      --muted: #667085;
+      --line: #e7e9f2;
+      --soft: #f7f8fc;
+      --green: #00a878;
+      --red: #e63946;
+      --orange: #f77f00;
+      --blue: #3a86ff;
+      --purple: #7b2cbf;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      min-height: 100vh;
+      padding: 18px;
+      color: var(--text)
+    }
+
+    .container {
+      max-width: 1500px;
+      margin: auto
+    }
+
+    .header,
+    .filter-section,
+    .card,
+    .metric-card {
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: 0 12px 38px rgba(16, 24, 40, .14)
+    }
+
+    .header {
+      padding: 22px 28px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    .header h1 {
+      font-size: 25px
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 5px
+    }
+
+    .pill {
+      font-size: 12px;
+      background: #eef2ff;
+      color: #3730a3;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 700
+    }
+
+    .filter-section {
+      padding: 18px 22px;
+      margin-bottom: 18px
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: end
+    }
+
+    .filter-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 6px
+    }
+
+    .filter-group select,
+    .filter-group input {
+      width: 100%;
+      border: 1px solid #d0d5dd;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: white
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      background: #111827;
+      color: white
+    }
+
+    .btn.secondary {
+      background: #f2f4f7;
+      color: #344054
+    }
+
+    .info-banner,
+    .warning-banner,
+    .error-banner {
+      margin-top: 14px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      text-align: center
+    }
+
+    .info-banner {
+      background: #e8f4ff;
+      color: #095985
+    }
+
+    .warning-banner {
+      background: #fff7d6;
+      color: #7a4d00
+    }
+
+    .error-banner {
+      background: #ffe4e6;
+      color: #9f1239
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 18px
+    }
+
+    .metric-card {
+      padding: 18px;
+      text-align: center;
+      border-top: 5px solid #667eea
+    }
+
+    .metric-card.green {
+      border-color: var(--green)
+    }
+
+    .metric-card.pink {
+      border-color: #f5576c
+    }
+
+    .metric-card.orange {
+      border-color: var(--orange)
+    }
+
+    .metric-card.red {
+      border-color: var(--red)
+    }
+
+    .metric-value {
+      font-size: 38px;
+      font-weight: 900;
+      letter-spacing: -1px
+    }
+
+    .metric-label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-top: 6px
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 16px
+    }
+
+    .card {
+      padding: 18px;
+      margin-bottom: 16px
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f2f7;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center
+    }
+
+    .small-note {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600
+    }
+
+    .table-wrapper {
+      overflow: auto;
+      max-height: 360px;
+      border: 1px solid var(--line);
+      border-radius: 12px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px
+    }
+
+    th,
+    td {
+      padding: 9px 8px;
+      border-bottom: 1px solid #eef0f4;
+      text-align: left;
+      vertical-align: top
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      z-index: 1;
+      font-weight: 900
+    }
+
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 800
+    }
+
+    .badge.bad {
+      background: #fee2e2;
+      color: #991b1b
+    }
+
+    .badge.neutral {
+      background: #e0f2fe;
+      color: #075985
+    }
+
+    .chart-box {
+      height: 360px;
+      position: relative
+    }
+
+    .chart-empty {
+      height: 230px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #667085;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      font-weight: 700
+    }
+
+    .insight-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px
+    }
+
+    .insight {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px
+    }
+
+    .insight .k {
+      font-size: 12px;
+      color: #667085;
+      font-weight: 800
+    }
+
+    .insight .v {
+      font-size: 22px;
+      font-weight: 900;
+      margin-top: 3px
+    }
+
+    .wordcloud {
+      min-height: 230px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px
+    }
+
+    .wordcloud span {
+      display: inline-block;
+      font-weight: 900;
+      line-height: 1
+    }
+
+    .footer {
+      text-align: center;
+      color: rgba(255, 255, 255, .78);
+      font-size: 11px;
+      margin: 22px 0 5px
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    @media(max-width:1100px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .grid-2,
+      .grid-3 {
+        grid-template-columns: 1fr
+      }
+
+      .filter-row {
+        grid-template-columns: 1fr 1fr
+      }
+    }
+
+    @media(max-width:640px) {
+      body {
+        padding: 10px
+      }
+
+      .header h1 {
+        font-size: 20px
+      }
+
+      .filter-row {
+        grid-template-columns: 1fr
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr
+      }
+
+      .metric-value {
+        font-size: 32px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>📊 Dashboard Absen Petugas Sensus</h1>
+        <div class="subtitle">Final akurat: filter tanggal, PML/PPL, ranking terbaik-terburuk, tidak jalan 2 hari, chart
+          BKU & RT, word cloud masalah.</div>
+      </div>
+      <div class="pill">Versi Final Akhir</div>
+    </div>
+    <div id="messageContainer"></div>
+    <div id="dashboardContent" class="hidden">
+      <div class="filter-section">
+        <div class="filter-row">
+          <div class="filter-group"><label>📅 Filter tanggal</label><select id="dateSelect">
+              <option value="">-- Pilih tanggal --</option>
+            </select></div>
+          <div class="filter-group"><label>👤 Filter PML</label><select id="filterPML">
+              <option value="ALL">Semua PML</option>
+            </select></div>
+          <div class="filter-group"><label>🧑‍💼 Filter nama petugas / PPL</label><select id="filterPPL">
+              <option value="ALL">Semua PPL</option>
+            </select></div>
+          <div class="filter-group"><label>Aksi</label><button class="btn secondary" id="resetBtn" type="button">Reset
+              Filter</button></div>
+        </div>
+        <div id="dateInfo" class="info-banner"></div>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value" id="totalPetugas">0</div>
+          <div class="metric-label">👥 Total Petugas</div>
+        </div>
+        <div class="metric-card green">
+          <div class="metric-value" id="absenBerangkat">0</div>
+          <div class="metric-label">✅ Absen Berangkat</div>
+        </div>
+        <div class="metric-card pink">
+          <div class="metric-value" id="izin">0</div>
+          <div class="metric-label">📝 Izin</div>
+        </div>
+        <div class="metric-card orange">
+          <div class="metric-value" id="belumAbsen">0</div>
+          <div class="metric-label">⏳ Tidak / Belum Absen</div>
+        </div>
+        <div class="metric-card red">
+          <div class="metric-value" id="duaHariTidakJalan">0</div>
+          <div class="metric-label">🚨 Tidak Jalan 2 Hari</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📊 Chart BKU - X = PML <span class="small-note">Bar ke atas</span></div>
+          <div class="chart-box"><canvas id="chartBkuPML"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏠 Chart RT - X = PML <span class="small-note">Bar ke atas</span></div>
+          <div class="chart-box"><canvas id="chartRtPML"></canvas></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📊 Detail BKU per Petugas <span class="small-note">Muncul jika PML dipilih</span>
+          </div>
+          <div id="detailBkuEmpty" class="chart-empty">Pilih 1 PML untuk menampilkan grafik X = nama petugas.</div>
+          <div id="detailBkuBox" class="chart-box hidden"><canvas id="chartBkuPPL"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏠 Detail RT per Petugas <span class="small-note">Muncul jika PML dipilih</span></div>
+          <div id="detailRtEmpty" class="chart-empty">Pilih 1 PML untuk menampilkan grafik X = nama petugas.</div>
+          <div id="detailRtBox" class="chart-box hidden"><canvas id="chartRtPPL"></canvas></div>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">🏆 5 PML Terbaik</div>
+          <div class="table-wrapper">
+            <table id="topPMLTable">
+              <thead>
+                <tr>
+                  <th>PML</th>
+                  <th class="num">Skor</th>
+                  <th class="num">Didata</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚠️ 5 PML Terendah</div>
+          <div class="table-wrapper">
+            <table id="bottomPMLTable">
+              <thead>
+                <tr>
+                  <th>PML</th>
+                  <th class="num">Skor</th>
+                  <th class="num">Didata</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🚨 PPL Tidak Jalan 2 Hari Berturut-turut</div>
+          <div class="table-wrapper">
+            <table id="streakTable">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama PPL</th>
+                  <th>PML</th>
+                  <th>2 Tanggal Terakhir</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🏆 5 PPL Terbaik</div>
+          <div class="table-wrapper">
+            <table id="topPPLTable">
+              <thead>
+                <tr>
+                  <th>PPL</th>
+                  <th>PML</th>
+                  <th class="num">Skor</th>
+                  <th class="num">Didata</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚠️ 5 PPL Terendah</div>
+          <div class="table-wrapper">
+            <table id="bottomPPLTable">
+              <thead>
+                <tr>
+                  <th>PPL</th>
+                  <th>PML</th>
+                  <th class="num">Skor</th>
+                  <th class="num">Didata</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🏠 Insight Rumah Tangga</div>
+          <div class="insight-list" id="rtInsights"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">☁️ Word Cloud Lapor Permasalahan</div>
+          <div class="wordcloud" id="wordCloud"></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">✅ Daftar Petugas Absen Berangkat</div>
+          <div class="table-wrapper">
+            <table id="absenTable">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama Petugas</th>
+                  <th>PML</th>
+                  <th>SLS</th>
+                  <th class="num">BKU Didata</th>
+                  <th class="num">RT Didata</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📝 Daftar Petugas Izin</div>
+          <div class="table-wrapper">
+            <table id="izinTable">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama Petugas</th>
+                  <th>PML</th>
+                  <th>Alasan</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">⏳ Daftar Petugas Tidak / Belum Absen</div>
+        <div class="table-wrapper">
+          <table id="tidakAbsenTable">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama Petugas</th>
+                <th>PML</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="footer">© 2026 - Dashboard Absen Petugas Sensus | File HTML siap pakai</div>
+  </div>
+  <script>
+    let excelData = [], timData = [], availableDates = [], petugasMaster = [];
+    let chartBkuPML = null, chartRtPML = null, chartBkuPPL = null, chartRtPPL = null;
+    const COL = { nama: 'Nama Petugas', waktu: 'Waktu Jalan', sls: 'Mau Ke SLS mana (kode 16 dikit)', bkuK: 'BKU yang dikunjungi', bkuD: 'BKU yang didata', bkuT: 'BKU yang menolak', rtK: 'Rumah Tangga Yang dikunjungi', rtD: 'Rumah Tangga Yang didata', rtT: 'Rumah Tangga yang menolak', masalah: 'Lapor Permasalahan', tglIzin: 'Tanggal Izin', alasan: 'Alasan', pml: 'PML' };
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuMnuC4fSeZCHe7x0cAVmlDumBU_YgIgc4N5yAbOSdST3_xpW23gits_-2Fu6lmxJo/exec?format=json&ts=' + Date.now();
+    function clean(v) { return (v === undefined || v === null) ? '' : String(v).trim() }
+    function num(v) { if (v === undefined || v === null || v === '') return 0; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? 0 : n }
+    function esc(s) { return clean(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\'': '&#39;', '"': '&quot;' }[c])) }
+    function normalizeName(s) { return clean(s).replace(/\s+/g, ' ').toUpperCase() }
+    function parseDate(v) {
+      if (v === undefined || v === null || v === '') return null;
+
+      if (v instanceof Date && !isNaN(v)) {
+        return toWitaDateKey(v);
+      }
+
+      if (typeof v === 'number') {
+        const d = new Date(Date.UTC(1899, 11, 30 + Math.floor(v)));
+        return toWitaDateKey(d);
+      }
+
+      const s = clean(v);
+
+      let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?)?(?:Z)?$/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+\d{1,2}:\d{2}:\d{2})?$/);
+      if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+
+      const d = new Date(s);
+      return isNaN(d) ? null : toWitaDateKey(d);
+    }
+
+    function toWitaDateKey(d) {
+      const wita = new Date(d.getTime() + (8 * 60 * 60 * 1000));
+      return `${wita.getUTCFullYear()}-${String(wita.getUTCMonth() + 1).padStart(2, '0')}-${String(wita.getUTCDate()).padStart(2, '0')}`;
+    }
+    function localDateKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+    function showMessage(msg, type = 'success') { const c = document.getElementById('messageContainer'); const cls = type === 'error' ? 'error-banner' : type === 'warn' ? 'warning-banner' : 'info-banner'; c.innerHTML = `<div class="${cls}">${msg}</div>` }
+    function makeChart(canvasId, oldChart, labels, datasets, yTitle) { if (oldChart) oldChart.destroy(); return new Chart(document.getElementById(canvasId), { type: 'bar', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { ticks: { autoSkip: false, maxRotation: 60, minRotation: 0 } }, y: { beginAtZero: true, title: { display: true, text: yTitle || 'Jumlah' }, ticks: { precision: 0 } } } } }) }
+    function aggregateBy(rows, groupKeyFn) { const m = new Map(); rows.forEach(r => { const k = groupKeyFn(r) || '-'; if (!m.has(k)) m.set(k, { label: k, bkuK: 0, bkuD: 0, bkuT: 0, rtK: 0, rtD: 0, rtT: 0, absen: 0, score: 0 }); const o = m.get(k); o.bkuK += num(r[COL.bkuK]); o.bkuD += num(r[COL.bkuD]); o.bkuT += num(r[COL.bkuT]); o.rtK += num(r[COL.rtK]); o.rtD += num(r[COL.rtD]); o.rtT += num(r[COL.rtT]); o.absen += 1; o.score = o.bkuD + o.rtD }); return [...m.values()] }
+    async function loadSpreadsheet() { try { const res = await fetch(APPS_SCRIPT_URL, { mode: 'cors', cache: 'no-store' }); const txt = await res.text(); let raw; try { raw = JSON.parse(txt) } catch (e) { throw new Error('Response bukan JSON: ' + txt.slice(0, 180)) } if (!Array.isArray(raw)) throw new Error('JSON tidak berupa array'); excelData = raw.map((r, i) => { const nama = clean(r[COL.nama]); const pml = clean(r[COL.pml]); const waktu = parseDate(r[COL.waktu]); const izinDate = parseDate(r[COL.tglIzin]); return { ...r, __idx: i, __nama: nama, __namaKey: normalizeName(nama), __pml: pml, __waktu: waktu, __izinDate: izinDate, __absenValid: !!(nama && clean(r[COL.sls]) && waktu), __izinValid: !!(nama && clean(r[COL.alasan]) && izinDate) } }); timData = []; buildMaster(); buildFilters(); document.getElementById('dashboardContent').classList.remove('hidden'); showMessage(`✅ Data berhasil dimuat: ${excelData.length} baris, ${petugasMaster.length} petugas, ${availableDates.length} tanggal valid.`); updateDashboard() } catch (err) { console.error(err); showMessage(`❌ Gagal membaca spreadsheet: ${err.message}`, 'error') } }
+    function buildMaster() { const map = new Map(); excelData.forEach(r => { if (!r.__namaKey) return; if (!map.has(r.__namaKey)) map.set(r.__namaKey, { nama: r.__nama, pml: r.__pml }); else if (!map.get(r.__namaKey).pml && r.__pml) map.get(r.__namaKey).pml = r.__pml }); petugasMaster = [...map.entries()].map(([key, v]) => ({ key, nama: v.nama, pml: v.pml || '-' })).sort((a, b) => a.pml.localeCompare(b.pml) || a.nama.localeCompare(b.nama)); const ds = new Set(); excelData.forEach(r => { if (r.__absenValid) ds.add(r.__waktu); if (r.__izinValid) ds.add(r.__izinDate) }); availableDates = [...ds].filter(Boolean).sort() }
+    function buildFilters() { const dateSel = document.getElementById('dateSelect'); dateSel.innerHTML = '<option value="">-- Pilih tanggal --</option>' + availableDates.map(d => `<option value="${d}">${d}</option>`).join(''); if (availableDates.length) dateSel.value = availableDates[availableDates.length - 1]; const pmls = [...new Set(petugasMaster.map(p => p.pml).filter(Boolean))].sort(); document.getElementById('filterPML').innerHTML = '<option value="ALL">Semua PML</option>' + pmls.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join(''); refreshPPLFilter();['dateSelect', 'filterPML', 'filterPPL'].forEach(id => { const el = document.getElementById(id); el.onchange = () => { if (id === 'filterPML') refreshPPLFilter(); updateDashboard() } }); document.getElementById('resetBtn').onclick = () => { document.getElementById('filterPML').value = 'ALL'; refreshPPLFilter(); document.getElementById('filterPPL').value = 'ALL'; if (availableDates.length) document.getElementById('dateSelect').value = availableDates[availableDates.length - 1]; updateDashboard() } }
+    function refreshPPLFilter() { const pml = document.getElementById('filterPML').value; let list = petugasMaster; if (pml !== 'ALL') list = list.filter(p => p.pml === pml); document.getElementById('filterPPL').innerHTML = '<option value="ALL">Semua PPL</option>' + list.map(p => `<option value="${esc(p.key)}">${esc(p.nama)}</option>`).join('') }
+    function currentScope() { const date = document.getElementById('dateSelect').value, pml = document.getElementById('filterPML').value, ppl = document.getElementById('filterPPL').value; let master = petugasMaster; if (pml !== 'ALL') master = master.filter(p => p.pml === pml); if (ppl !== 'ALL') master = master.filter(p => p.key === ppl); const keys = new Set(master.map(p => p.key)); let absen = excelData.filter(r => r.__absenValid && r.__waktu === date && keys.has(r.__namaKey)); let izin = excelData.filter(r => r.__izinValid && r.__izinDate === date && keys.has(r.__namaKey)); return { date, pml, ppl, master, keys, absen, izin } }
+    function updateDashboard() { const s = currentScope(); if (!s.date) return; const absenKeys = new Set(s.absen.map(r => r.__namaKey)); const izinKeys = new Set(s.izin.map(r => r.__namaKey)); const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key)); const dua = twoDayNoWork(s); document.getElementById('totalPetugas').textContent = s.master.length; document.getElementById('absenBerangkat').textContent = absenKeys.size; document.getElementById('izin').textContent = izinKeys.size; document.getElementById('belumAbsen').textContent = tidak.length; document.getElementById('duaHariTidakJalan').textContent = dua.length; document.getElementById('dateInfo').innerHTML = `📅 Tanggal: <b>${s.date}</b> | PML: <b>${s.pml === 'ALL' ? 'Semua' : esc(s.pml)}</b> | PPL: <b>${s.ppl === 'ALL' ? 'Semua' : esc((petugasMaster.find(p => p.key === s.ppl) || {}).nama || '')}</b> | Absen: <b>${absenKeys.size}</b> | Izin: <b>${izinKeys.size}</b> | Tidak/belum absen: <b>${tidak.length}</b>`; renderCharts(s); renderRankings(s); renderStreak(dua); renderInsights(s); renderWordCloud(s); renderTables(s, tidak) }
+    function renderCharts(s) { let rowsPml = excelData.filter(r => r.__absenValid && r.__waktu === s.date); if (s.ppl !== 'ALL') rowsPml = rowsPml.filter(r => r.__namaKey === s.ppl); const pmlAgg = aggregateBy(rowsPml, r => r.__pml || ((petugasMaster.find(p => p.key === r.__namaKey) || {}).pml)).sort((a, b) => a.label.localeCompare(b.label)); chartBkuPML = makeChart('chartBkuPML', chartBkuPML, pmlAgg.map(x => x.label), [{ label: 'BKU dikunjungi', data: pmlAgg.map(x => x.bkuK) }, { label: 'BKU didata', data: pmlAgg.map(x => x.bkuD) }, { label: 'BKU menolak', data: pmlAgg.map(x => x.bkuT) }], 'Jumlah BKU'); chartRtPML = makeChart('chartRtPML', chartRtPML, pmlAgg.map(x => x.label), [{ label: 'RT dikunjungi', data: pmlAgg.map(x => x.rtK) }, { label: 'RT didata', data: pmlAgg.map(x => x.rtD) }, { label: 'RT menolak', data: pmlAgg.map(x => x.rtT) }], 'Jumlah rumah tangga'); const showDetail = s.pml !== 'ALL'; document.getElementById('detailBkuEmpty').classList.toggle('hidden', showDetail); document.getElementById('detailRtEmpty').classList.toggle('hidden', showDetail); document.getElementById('detailBkuBox').classList.toggle('hidden', !showDetail); document.getElementById('detailRtBox').classList.toggle('hidden', !showDetail); if (showDetail) { const pplAgg = aggregateBy(s.absen, r => r.__nama).sort((a, b) => b.score - a.score); chartBkuPPL = makeChart('chartBkuPPL', chartBkuPPL, pplAgg.map(x => x.label), [{ label: 'BKU dikunjungi', data: pplAgg.map(x => x.bkuK) }, { label: 'BKU didata', data: pplAgg.map(x => x.bkuD) }, { label: 'BKU menolak', data: pplAgg.map(x => x.bkuT) }], 'Jumlah BKU'); chartRtPPL = makeChart('chartRtPPL', chartRtPPL, pplAgg.map(x => x.label), [{ label: 'RT dikunjungi', data: pplAgg.map(x => x.rtK) }, { label: 'RT didata', data: pplAgg.map(x => x.rtD) }, { label: 'RT menolak', data: pplAgg.map(x => x.rtT) }], 'Jumlah rumah tangga') } }
+    function rankData(s, level) { let rows = s.absen; if (level === 'PML') { const agg = aggregateBy(rows, r => r.__pml || ((petugasMaster.find(p => p.key === r.__namaKey) || {}).pml)); return agg.map(x => ({ ...x, didata: x.bkuD + x.rtD, score: x.bkuD + x.rtD - (x.bkuT + x.rtT) })) } const agg = aggregateBy(rows, r => r.__namaKey); return agg.map(x => { const p = petugasMaster.find(p => p.key === x.label) || {}; return { ...x, label: p.nama || x.label, pml: p.pml || '-', didata: x.bkuD + x.rtD, score: x.bkuD + x.rtD - (x.bkuT + x.rtT) } }) }
+    function renderRankings(s) { const pmlRank = rankData(s, 'PML').filter(x => x.absen > 0); const pplRank = rankData(s, 'PPL').filter(x => x.absen > 0); fillRank('topPMLTable', pmlRank.slice().sort((a, b) => b.score - a.score).slice(0, 5), false); fillRank('bottomPMLTable', pmlRank.slice().sort((a, b) => a.score - b.score).slice(0, 5), false); fillRank('topPPLTable', pplRank.slice().sort((a, b) => b.score - a.score).slice(0, 5), true); fillRank('bottomPPLTable', pplRank.slice().sort((a, b) => a.score - b.score).slice(0, 5), true) }
+    function fillRank(id, rows, isPPL) { const tb = document.querySelector(`#${id} tbody`); if (!rows.length) { tb.innerHTML = `<tr><td colspan="${isPPL ? 4 : 3}" style="text-align:center">Tidak ada data</td></tr>`; return } tb.innerHTML = rows.map(r => isPPL ? `<tr><td>${esc(r.label)}</td><td>${esc(r.pml)}</td><td class="num"><span class="badge neutral">${r.score}</span></td><td class="num">${r.didata}</td></tr>` : `<tr><td>${esc(r.label)}</td><td class="num"><span class="badge neutral">${r.score}</span></td><td class="num">${r.didata}</td></tr>`).join('') }
+    function twoDayNoWork(s) { const idx = availableDates.indexOf(s.date); if (idx < 1) return []; const d1 = availableDates[idx - 1], d2 = s.date; const rows = excelData.filter(r => r.__absenValid && (r.__waktu === d1 || r.__waktu === d2)); const worked = new Set(rows.map(r => r.__namaKey + '|' + r.__waktu)); return s.master.filter(p => !worked.has(p.key + '|' + d1) && !worked.has(p.key + '|' + d2)).map(p => ({ ...p, dates: `${d1} & ${d2}` })) }
+    function renderStreak(rows) { const tb = document.querySelector('#streakTable tbody'); if (!rows.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center">Tidak ada PPL yang tidak jalan 2 hari berturut-turut pada rentang terpilih.</td></tr>'; return } tb.innerHTML = rows.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.nama)}</td><td>${esc(p.pml)}</td><td>${esc(p.dates)}</td></tr>`).join('') }
+    function renderInsights(s) { const totalRTK = s.absen.reduce((a, r) => a + num(r[COL.rtK]), 0), totalRTD = s.absen.reduce((a, r) => a + num(r[COL.rtD]), 0), totalRTT = s.absen.reduce((a, r) => a + num(r[COL.rtT]), 0); const jalan = new Set(s.absen.map(r => r.__namaKey)).size; const sukses = totalRTK ? ((totalRTD / totalRTK) * 100) : 0; const tolak = totalRTK ? ((totalRTT / totalRTK) * 100) : 0; const avg = jalan ? (totalRTD / jalan) : 0; const zero = s.absen.filter(r => num(r[COL.rtD]) === 0).length; const top = s.absen.slice().sort((a, b) => num(b[COL.rtD]) - num(a[COL.rtD]))[0]; document.getElementById('rtInsights').innerHTML = [['RT dikunjungi', totalRTK], ['RT berhasil didata', totalRTD], ['RT menolak', totalRTT], ['Tingkat keberhasilan', sukses.toFixed(1) + '%'], ['Tingkat penolakan', tolak.toFixed(1) + '%'], ['Rata-rata RT didata / petugas jalan', avg.toFixed(1)], ['Petugas jalan tapi 0 RT didata', zero], ['PPL RT didata tertinggi', top ? `${esc(top.__nama)} (${num(top[COL.rtD])})` : '-']].map(x => `<div class="insight"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('') }
+    function renderWordCloud(s) { const stop = new Set('dan yang di ke dari untuk dengan karena pada tidak ada ini itu saya kami sudah belum dalam adalah agar atau serta masih lapor permasalahan masalah petugas'.split(' ')); const text = s.absen.map(r => clean(r[COL.masalah])).filter(Boolean).join(' '); const freq = {}; text.toLowerCase().replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, ' ').split(/\s+/).forEach(w => { if (w.length < 3 || stop.has(w)) return; freq[w] = (freq[w] || 0) + 1 }); const words = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 35); const box = document.getElementById('wordCloud'); if (!words.length) { box.innerHTML = '<span style="font-size:15px;color:#667085">Belum ada teks laporan masalah pada filter ini.</span>'; return } const max = words[0][1]; box.innerHTML = words.map(([w, c]) => `<span title="${c} kali" style="font-size:${14 + Math.round((c / max) * 30)}px;opacity:${0.55 + (c / max) * 0.45}">${esc(w)}</span>`).join('') }
+    function renderTables(s, tidak) { const ab = document.querySelector('#absenTable tbody'); ab.innerHTML = s.absen.length ? s.absen.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.__nama)}</td><td>${esc(r.__pml)}</td><td>${esc(r[COL.sls])}</td><td class="num">${num(r[COL.bkuD])}</td><td class="num">${num(r[COL.rtD])}</td></tr>`).join('') : '<tr><td colspan="6" style="text-align:center">Tidak ada petugas absen pada filter ini.</td></tr>'; const iz = document.querySelector('#izinTable tbody'); iz.innerHTML = s.izin.length ? s.izin.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.__nama)}</td><td>${esc(r.__pml)}</td><td>${esc(r[COL.alasan])}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center">Tidak ada petugas izin pada filter ini.</td></tr>'; const tb = document.querySelector('#tidakAbsenTable tbody'); tb.innerHTML = tidak.length ? tidak.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.nama)}</td><td>${esc(p.pml)}</td><td><span class="badge bad">Tidak/belum absen</span></td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center">Semua petugas pada filter ini sudah absen atau izin.</td></tr>' }
+    window.addEventListener('DOMContentLoaded', loadSpreadsheet);
+  </script>
+</body>
+
+</html>
