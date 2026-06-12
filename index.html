@@ -841,16 +841,19 @@
         return;
       }
 
-      const totalPetugas = (document.getElementById('filterPML').value === 'ALL' && document.getElementById('filterPPL').value === 'ALL')
-        ? window.__raw.master.length
-        : s.master.length;
-
+      const allMaster = petugasMaster;
       const absenKeys = new Set(s.absen.map(r => r.__namaKey));
       const izinKeys = new Set(s.izin.map(r => r.__namaKey));
-      const tidak = s.master.filter(p => !absenKeys.has(p.key) && !izinKeys.has(p.key));
-      const dua = twoDayNoWork(s);
 
-      document.getElementById('totalPetugas').textContent = totalPetugas;
+      const tidak = allMaster.filter(p => {
+        const sudahAbsen = absenKeys.has(p.key);
+        const sudahIzin = izinKeys.has(p.key);
+        return !sudahAbsen && !sudahIzin;
+      });
+
+      const dua = twoDayNoWork();
+
+      document.getElementById('totalPetugas').textContent = allMaster.length;
       document.getElementById('absenBerangkat').textContent = absenKeys.size;
       document.getElementById('izin').textContent = izinKeys.size;
       document.getElementById('belumAbsen').textContent = tidak.length;
@@ -940,13 +943,18 @@
       ).join('');
     }
 
-    function twoDayNoWork(s) {
-      const idx = availableDates.indexOf(s.date);
+    function twoDayNoWork() {
+      const idx = availableDates.indexOf(document.getElementById('dateSelect').value);
       if (idx < 1) return [];
-      const d1 = availableDates[idx - 1], d2 = s.date;
-      const rows = excelData.filter(r => r.__absenValid && (r.__waktu === d1 || r.__waktu === d2));
-      const worked = new Set(rows.map(r => r.__namaKey + '|' + r.__waktu));
-      return s.master.filter(p => !worked.has(p.key + '|' + d1) && !worked.has(p.key + '|' + d2)).map(p => ({ ...p, dates: `${d1} & ${d2}` }));
+
+      const d1 = availableDates[idx - 1];
+      const d2 = availableDates[idx];
+
+      return petugasMaster.filter(p => {
+        const worked1 = excelData.some(r => r.__absenValid && r.__namaKey === p.key && r.__waktu === d1);
+        const worked2 = excelData.some(r => r.__absenValid && r.__namaKey === p.key && r.__waktu === d2);
+        return !worked1 && !worked2;
+      }).map(p => ({ ...p, dates: `${d1} & ${d2}` }));
     }
 
     function renderStreak(rows) {
